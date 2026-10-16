@@ -142,9 +142,11 @@ class SubtitleTranslationController(
     }
 
     private fun hideNativeSpu(service: PlaybackService) {
-        if (nativeSpuHidden) return
-        savedSpuTrackId = service.spuTrack
-        if (service.spuTrack != "-1") service.setSpuTrack("-1")
+        val current = service.spuTrack
+        if (current != "-1") {
+            savedSpuTrackId = current
+            service.setSpuTrack("-1")
+        }
         nativeSpuHidden = true
     }
 

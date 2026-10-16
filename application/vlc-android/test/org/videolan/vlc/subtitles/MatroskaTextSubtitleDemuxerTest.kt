@@ -3,147 +3,97 @@ package org.videolan.vlc.subtitles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.RandomAccessFile
 
 class MatroskaTextSubtitleDemuxerTest {
 
     @Test
-    fun extract_readsSimpleUtf8Block() {
-        val file = File.createTempFile("test-sub", ".mkv")
+    fun extract_blockGroupUtf8InsideSegment() {
+        val file = File.createTempFile("sub", ".mkv")
         file.deleteOnExit()
-        writeMinimalMkv(file, trackNumber = 2, text = "Hello world")
+        file.writeBytes(minimalMkv(trackNumber = 2, codec = "S_TEXT/UTF8", payload = "Hello world".toByteArray(), relTime = 500, duration = 1000))
         val cues = MatroskaTextSubtitleDemuxer.extract(file, targetTrackNumber = 2)
-        assertTrue(cues.isNotEmpty())
-        assertEquals("Hello world", cues.first().text)
+        assertEquals(1, cues.size)
+        assertEquals("Hello world", cues[0].text)
+        assertEquals(500L, cues[0].startTimeMs)
+        assertEquals(1500L, cues[0].endTimeMs)
     }
 
-    /** Builds a tiny valid-enough MKV with one text subtitle block. */
-    private fun writeMinimalMkv(file: File, trackNumber: Int, text: String) {
-        RandomAccessFile(file, "rw").use { raf ->
-            fun writeEbml(id: Int, data: ByteArray) {
-                raf.write(encodeId(id))
-                raf.write(encodeSize(data.size.toLong()))
-                raf.write(data)
-            }
-            fun writeUIntElement(id: Int, value: Long) {
-                val bytes = byteArrayOf(value.toByte())
-                writeEbml(id, bytes)
-            }
-            fun writeStringElement(id: Int, value: String) {
-                writeEbml(id, value.toByteArray(Charsets.UTF_8))
-            }
-
-            // EBML header (minimal)
-            writeEbml(0x1A45DFA3, byteArrayOf(
-                0x42.toByte(), 0x86.toByte(), 0x81.toByte(), 0x01, // EBMLVersion = 1
-            ))
-
-            val segmentPayload = java.io.ByteArrayOutputStream()
-            fun segWrite(id: Int, data: ByteArray) {
-                segmentPayload.write(encodeId(id))
-                segmentPayload.write(encodeSize(data.size.toLong()))
-                segmentPayload.write(data)
-            }
-
-            // Tracks
-            val trackEntry = java.io.ByteArrayOutputStream()
-            fun teWrite(id: Int, data: ByteArray) {
-                trackEntry.write(encodeId(id))
-                trackEntry.write(encodeSize(data.size.toLong()))
-                trackEntry.write(data)
-            }
-            teWrite(0xD7, byteArrayOf(trackNumber.toByte()))
-            teWrite(0x83, byteArrayOf(0x11)) // subtitle
-            teWrite(0x86, "S_TEXT/UTF8".toByteArray(Charsets.UTF_8))
-            val trackEntryBytes = trackEntry.toByteArray()
-            val tracksContent = java.io.ByteArrayOutputStream().apply {
-                write(encodeId(0xAE))
-                write(encodeSize(trackEntryBytes.size.toLong()))
-                write(trackEntryBytes)
-            }.toByteArray()
-            segWrite(0x1654AE6B, tracksContent)
-
-            // Cluster with one SimpleBlock at t=1000ms
-            val blockPayload = buildSimpleBlock(trackNumber, relativeTimeMs = 0, text)
-            val clusterContent = java.io.ByteArrayOutputStream().apply {
-                write(encodeId(0xE7))
-                write(encodeSize(1))
-                write(0x03.toByte()) // timecode 3 -> with scale typically ms; cluster uses ms in real mkv
-                write(encodeId(0xA3))
-                write(encodeSize(blockPayload.size.toLong()))
-                write(blockPayload)
-            }.toByteArray()
-            // Use timecode 1000 (0x03E8) properly
-            val clusterFixed = java.io.ByteArrayOutputStream().apply {
-                write(encodeId(0xE7))
-                write(encodeSize(2))
-                write(0x03.toByte())
-                write(0xE8.toByte())
-                write(encodeId(0xA3))
-                write(encodeSize(blockPayload.size.toLong()))
-                write(blockPayload)
-            }.toByteArray()
-            segWrite(0x1F43B675, clusterFixed)
-
-            writeEbml(0x18538067, segmentPayload.toByteArray())
-        }
+    @Test
+    fun extract_assDropsStyleAndKeepsText() {
+        val file = File.createTempFile("sub", ".mkv")
+        file.deleteOnExit()
+        val payload = "0,0,Default,,0,0,0,,Hello {\\i1}ASS{\\i0}".toByteArray()
+        file.writeBytes(minimalMkv(trackNumber = 3, codec = "S_TEXT/ASS", payload = payload, relTime = 200, duration = 800))
+        val cues = MatroskaTextSubtitleDemuxer.extract(file, targetTrackNumber = 3)
+        assertEquals(1, cues.size)
+        assertEquals("Hello ASS", cues[0].text)
+        assertEquals(200L, cues[0].startTimeMs)
     }
 
-    private fun buildSimpleBlock(trackNumber: Int, relativeTimeMs: Int, text: String): ByteArray {
-        val payload = text.toByteArray(Charsets.UTF_8)
-        val trackVint = encodeVint(trackNumber.toLong())
-        val out = java.io.ByteArrayOutputStream()
-        out.write(trackVint)
-        out.write((relativeTimeMs shr 8).toByte())
-        out.write(relativeTimeMs.toByte())
-        out.write(0x80) // keyframe flag
-        out.write(payload)
+    @Test
+    fun extract_ordinalSelectsTrackWhenIdDiffers() {
+        val file = File.createTempFile("sub", ".mkv")
+        file.deleteOnExit()
+        file.writeBytes(minimalMkv(trackNumber = 4, codec = "S_TEXT/UTF8", payload = "Only".toByteArray(), relTime = 0, duration = 1000))
+        val result = MatroskaTextSubtitleDemuxer.extractResult(file, trackNumberHints = intArrayOf(99), subtitleOrdinal = 0)
+        assertTrue(result is MatroskaTextSubtitleDemuxer.Result.Cues)
+        assertEquals("Only", (result as MatroskaTextSubtitleDemuxer.Result.Cues).cues[0].text)
+    }
+
+    private fun minimalMkv(
+        trackNumber: Int,
+        codec: String,
+        payload: ByteArray,
+        relTime: Int,
+        duration: Int,
+    ): ByteArray {
+        val trackEntry = element(0xAE, concat(
+            element(0xD7, byteArrayOf(trackNumber.toByte())),
+            element(0x83, byteArrayOf(0x11)),
+            element(0x86, codec.toByteArray()),
+        ))
+        val tracks = element(0x1654AE6B, trackEntry)
+        val info = element(0x1549A966, element(0x2AD7B1, byteArrayOf(0x0F, 0x42, 0x40)))
+        val block = concat(
+            byteArrayOf((0x80 or trackNumber).toByte()),
+            byteArrayOf((relTime shr 8).toByte(), relTime.toByte()),
+            byteArrayOf(0),
+            payload,
+        )
+        val group = element(0xA0, concat(
+            element(0xA1, block),
+            element(0x9B, byteArrayOf((duration shr 8).toByte(), duration.toByte())),
+        ))
+        val cluster = element(0x1F43B675, concat(element(0xE7, byteArrayOf(0)), group))
+        val segment = element(0x18538067, concat(info, tracks, cluster))
+        val header = element(0x1A45DFA3, element(0x4282, "matroska".toByteArray()))
+        return concat(header, segment)
+    }
+
+    private fun element(id: Int, data: ByteArray): ByteArray = concat(encodeId(id), encodeSize(data.size.toLong()), data)
+
+    private fun concat(vararg parts: ByteArray): ByteArray {
+        val out = ByteArrayOutputStream()
+        parts.forEach { out.write(it) }
         return out.toByteArray()
     }
 
-    private fun encodeId(id: Int): ByteArray {
-        return when {
-            id <= 0xFF -> byteArrayOf(id.toByte())
-            id <= 0xFFFF -> byteArrayOf((id shr 8).toByte(), id.toByte())
-            else -> byteArrayOf(
-                (id shr 24).toByte(),
-                (id shr 16).toByte(),
-                (id shr 8).toByte(),
-                id.toByte(),
-            )
-        }
+    private fun encodeId(id: Int): ByteArray = when {
+        id <= 0xFF -> byteArrayOf(id.toByte())
+        id <= 0xFFFF -> byteArrayOf((id shr 8).toByte(), id.toByte())
+        id <= 0xFFFFFF -> byteArrayOf((id shr 16).toByte(), (id shr 8).toByte(), id.toByte())
+        else -> byteArrayOf((id shr 24).toByte(), (id shr 16).toByte(), (id shr 8).toByte(), id.toByte())
     }
 
     private fun encodeSize(size: Long): ByteArray {
-        if (size <= 0x7F) return byteArrayOf(size.toByte())
+        if (size <= 0x7F) return byteArrayOf((0x80 or size.toInt()).toByte())
         if (size <= 0x3FFF) return byteArrayOf((0x40 or (size shr 8).toInt()).toByte(), size.toByte())
-        if (size <= 0x1FFFFF) return byteArrayOf(
+        return byteArrayOf(
             (0x20 or (size shr 16).toInt()).toByte(),
             (size shr 8).toByte(),
             size.toByte(),
         )
-        return byteArrayOf(
-            (0x10 or (size shr 24).toInt()).toByte(),
-            (size shr 16).toByte(),
-            (size shr 8).toByte(),
-            size.toByte(),
-        )
-    }
-
-    private fun encodeVint(value: Long): ByteArray {
-        var length = 1
-        var max = 127L
-        while (value > max && length < 8) {
-            length++
-            max = (max shl 7) or 0x7F
-        }
-        val bytes = ByteArray(length)
-        for (i in length - 1 downTo 0) {
-            bytes[i] = (value and 0xFF).toByte()
-            value = value shr 8
-        }
-        bytes[0] = (bytes[0].toInt() or (1 shl (8 - length))).toByte()
-        return bytes
     }
 }

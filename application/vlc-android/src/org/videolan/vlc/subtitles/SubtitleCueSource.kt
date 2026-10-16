@@ -28,16 +28,11 @@ object SubtitleCueSource {
         media: MediaWrapper,
     ): LoadResult {
         val embeddedSelected = EmbeddedSubtitleExtractor.isEmbeddedSpuSelected(service, media)
-
         if (embeddedSelected) {
-            return when (val embedded = EmbeddedSubtitleExtractor.extractForCurrentSpu(context, service, media)) {
-                is EmbeddedSubtitleExtractor.Result.Success -> LoadResult.Ok(embedded.cues)
-                is EmbeddedSubtitleExtractor.Result.BitmapTrack -> LoadResult.Error(Kind.BitmapEmbedded)
-                is EmbeddedSubtitleExtractor.Result.NoTextTracks,
-                is EmbeddedSubtitleExtractor.Result.ExtractionFailed,
-                is EmbeddedSubtitleExtractor.Result.ParseFailed,
-                -> LoadResult.Error(Kind.UnsupportedEmbedded)
-                is EmbeddedSubtitleExtractor.Result.UnsupportedSource -> LoadResult.Error(Kind.UnsupportedEmbedded)
+            when (val embedded = EmbeddedSubtitleExtractor.extractForCurrentSpu(context, service, media)) {
+                is EmbeddedSubtitleExtractor.Result.Success -> return LoadResult.Ok(embedded.cues)
+                is EmbeddedSubtitleExtractor.Result.BitmapTrack -> return LoadResult.Error(Kind.BitmapEmbedded)
+                else -> Unit
             }
         }
 
@@ -45,15 +40,21 @@ object SubtitleCueSource {
         if (file != null) {
             val cues = SubtitleCueParser.parseFile(file)
             if (cues.isNotEmpty()) return LoadResult.Ok(cues)
-            if (file.exists()) return LoadResult.Error(Kind.ParseFailed)
+            if (file.exists() && !embeddedSelected) return LoadResult.Error(Kind.ParseFailed)
         }
 
-        when (val embedded = EmbeddedSubtitleExtractor.extractForCurrentSpu(context, service, media)) {
-            is EmbeddedSubtitleExtractor.Result.Success -> return LoadResult.Ok(embedded.cues)
-            is EmbeddedSubtitleExtractor.Result.BitmapTrack -> return LoadResult.Error(Kind.BitmapEmbedded)
-            else -> { /* fall through */ }
+        if (!embeddedSelected) {
+            when (val embedded = EmbeddedSubtitleExtractor.extractForCurrentSpu(context, service, media)) {
+                is EmbeddedSubtitleExtractor.Result.Success -> return LoadResult.Ok(embedded.cues)
+                is EmbeddedSubtitleExtractor.Result.BitmapTrack -> return LoadResult.Error(Kind.BitmapEmbedded)
+                else -> Unit
+            }
         }
 
-        return LoadResult.Error(Kind.NoSource)
+        return if (embeddedSelected) {
+            LoadResult.Error(Kind.UnsupportedEmbedded)
+        } else {
+            LoadResult.Error(Kind.NoSource)
+        }
     }
 }
