@@ -268,6 +268,7 @@ class VideoPlayerOverlayDelegate (private val player: VideoPlayerActivity) {
                         VideoTracksDialog.VideoTrackOption.SUB_DELAY -> player.delayDelegate.showSubsDelaySetting()
                         VideoTracksDialog.VideoTrackOption.SUB_DOWNLOAD -> downloadSubtitles()
                         VideoTracksDialog.VideoTrackOption.SUB_PICK -> pickSubtitles()
+                        VideoTracksDialog.VideoTrackOption.SUB_AI_TRANSLATE -> player.toggleAiSubtitleTranslation()
                     }
                 }, { trackID: String, trackType: VideoTracksDialog.TrackType ->
             when (trackType) {

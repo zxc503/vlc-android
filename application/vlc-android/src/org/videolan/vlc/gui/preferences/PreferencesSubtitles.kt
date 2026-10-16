@@ -33,6 +33,7 @@ import androidx.preference.SeekBarPreference
 import com.jaredrummler.android.colorpicker.ColorPreferenceCompat
 import kotlinx.coroutines.launch
 import org.videolan.resources.VLCInstance
+import org.videolan.tools.KEY_AI_SUBTITLE_TRANSLATION
 import org.videolan.tools.KEY_SUBTITLES_BACKGROUND
 import org.videolan.tools.KEY_SUBTITLES_BACKGROUND_COLOR
 import org.videolan.tools.KEY_SUBTITLES_BACKGROUND_COLOR_OPACITY
@@ -204,6 +205,7 @@ class PreferencesSubtitles : BasePreferenceFragment(), SharedPreferences.OnShare
                 managePreferenceVisibilities()
             }
             KEY_SUBTITLE_PREFERRED_LANGUAGE -> updatePreferredSubtitleTrack()
+            KEY_AI_SUBTITLE_TRANSLATION -> valueChanged = true
         }
     }
 

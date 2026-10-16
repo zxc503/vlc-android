@@ -216,6 +216,7 @@ import org.videolan.vlc.media.ResumeStatus
 import org.videolan.vlc.media.WaitConfirmation
 import org.videolan.vlc.repository.ExternalSubRepository
 import org.videolan.vlc.repository.SlaveRepository
+import org.videolan.vlc.subtitles.SubtitleTranslationController
 import org.videolan.vlc.util.ContextOption
 import org.videolan.vlc.util.ContextOption.CTX_ADD_TO_PLAYLIST
 import org.videolan.vlc.util.ContextOption.CTX_FAV_ADD
@@ -250,6 +251,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
 
     var hasPhysicalNotch: Boolean = false
     private var subtitlesExtraPath: String? = null
+    private var subtitleTranslationController: SubtitleTranslationController? = null
     private lateinit var startedScope: CoroutineScope
     private var videoRemoteJob: Job? = null
     var service: PlaybackService? = null
@@ -605,6 +607,14 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
         // Extra initialization when no secondary display is detected
         isTv = Settings.showTvUi
         if (displayManager.isPrimary) {
+            findViewById<TextView>(R.id.ai_subtitle_overlay)?.let { overlay ->
+                subtitleTranslationController = SubtitleTranslationController(
+                    overlay = overlay,
+                    settings = settings,
+                    lifecycleScope = lifecycleScope,
+                    serviceProvider = { service },
+                )
+            }
             // Orientation
             // Tips
             if (!BuildConfig.DEBUG && !isTv && !settings.getBoolean(PREF_TIPS_SHOWN, false)
@@ -1218,6 +1228,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
     }
 
     private fun exitOK() {
+        subtitleTranslationController?.onPlaybackStopped()
         exit(RESULT_OK)
     }
 
@@ -1655,6 +1666,7 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                                     service.setSpuTrack(spuTrack)
                                     lastSpuTrack = "-2"
                                 }
+                                subtitleTranslationController?.onPlaybackSessionStart()
                             }
                         }
                     }
@@ -1692,8 +1704,14 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                             handler.sendEmptyMessageDelayed(LOADING_ANIMATION, LOADING_ANIMATION_DELAY.toLong())
                     }
                 }
+                MediaPlayer.Event.TimeChanged ->
+                    subtitleTranslationController?.onTimeChanged(event.timeChanged)
             }
         }
+    }
+
+    fun toggleAiSubtitleTranslation() {
+        subtitleTranslationController?.toggle()
     }
 
     private var currentTracks: Pair<String, List<IMedia.Track>>? = null
@@ -2542,9 +2560,11 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 if (volSave > 100 && service.volume != volSave) service.setVolume(volSave)
             }
             service.addCallback(this)
+            subtitleTranslationController?.onPlaybackSessionStart()
             service.playlistManager.waitForConfirmation.observe(this, resumeDialogObserver)
             //if (isTalkbackIsEnabled()) overlayDelegate.showOverlayTimeout(OVERLAY_INFINITE)
         } else if (this.service != null) {
+            subtitleTranslationController?.onPlaybackStopped()
             this.service?.removeCallback(this)
             this.service?.playlistManager?.waitForConfirmation?.removeObserver(resumeDialogObserver)
             this.service = null

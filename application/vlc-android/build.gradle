@@ -37,6 +37,7 @@ android {
         buildConfigField 'String', 'VLC_VERSION_NAME', "\"${rootProject.ext.versionName}\""
         buildConfigField 'String[]', 'TRANSLATION_ARRAY', generateTranslation()
         buildConfigField 'int', 'VLC_MAJOR_VERSION', "${rootProject.ext.vlcMajorVersion}"
+        buildConfigField 'String', 'DEEPSEEK_API_KEY', "\"${getDeepSeekApiKey(project)}\""
 
         testInstrumentationRunner "org.videolan.vlc.MultidexTestRunner"
         // The following argument makes the Android Test Orchestrator run its
@@ -127,6 +128,15 @@ android {
         buildConfig = true
         resValues = true
     }
+}
+
+static def getDeepSeekApiKey(project) {
+    def localProps = new Properties()
+    def localFile = project.rootProject.file('local.properties')
+    if (localFile.exists()) {
+        localProps.load(localFile.newDataInputStream())
+    }
+    return System.getenv('DEEPSEEK_API_KEY') ?: localProps.getProperty('deepseek.api.key') ?: project.findProperty('deepseek_api_key') ?: ""
 }
 
 def generateTranslation() {

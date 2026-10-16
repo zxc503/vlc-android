@@ -394,6 +394,7 @@ const val KEY_SUBTITLES_SHADOW = "subtitles_shadow"
 const val KEY_SUBTITLES_SHADOW_COLOR = "subtitles_shadow_color"
 const val KEY_SUBTITLES_SHADOW_COLOR_OPACITY = "subtitles_shadow_color_opacity"
 const val KEY_SUBTITLES_AUTOLOAD = "subtitles_autoload"
+const val KEY_AI_SUBTITLE_TRANSLATION = "ai_subtitle_translation"
 const val KEY_OPENGL = "opengl"
 
 //Control settings
