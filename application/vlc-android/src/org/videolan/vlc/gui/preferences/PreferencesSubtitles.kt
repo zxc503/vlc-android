@@ -25,15 +25,18 @@ package org.videolan.vlc.gui.preferences
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
+import android.text.InputType
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.CheckBoxPreference
+import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.SeekBarPreference
 import com.jaredrummler.android.colorpicker.ColorPreferenceCompat
 import kotlinx.coroutines.launch
 import org.videolan.resources.VLCInstance
 import org.videolan.tools.KEY_AI_SUBTITLE_TRANSLATION
+import org.videolan.tools.KEY_DEEPSEEK_API_KEY
 import org.videolan.tools.KEY_SUBTITLES_BACKGROUND
 import org.videolan.tools.KEY_SUBTITLES_BACKGROUND_COLOR
 import org.videolan.tools.KEY_SUBTITLES_BACKGROUND_COLOR_OPACITY
@@ -56,6 +59,7 @@ import org.videolan.tools.Settings
 import org.videolan.vlc.BuildConfig
 import org.videolan.vlc.R
 import org.videolan.vlc.gui.helpers.restartMediaPlayer
+import org.videolan.vlc.subtitles.DeepSeekApiKeyStore
 
 class PreferencesSubtitles : BasePreferenceFragment(), SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -79,6 +83,7 @@ class PreferencesSubtitles : BasePreferenceFragment(), SharedPreferences.OnShare
     private lateinit var subtitlesOutlineSize: ListPreference
     private lateinit var subtitlesOutlineColor: ColorPreferenceCompat
     private lateinit var subtitlesOutlineOpacity: SeekBarPreference
+    private lateinit var deepSeekApiKey: EditTextPreference
 
     private var valueChanged = false
 
@@ -116,6 +121,18 @@ class PreferencesSubtitles : BasePreferenceFragment(), SharedPreferences.OnShare
         subtitlesOutlineSize = findPreference(KEY_SUBTITLES_OUTLINE_SIZE)!!
         subtitlesOutlineColor = findPreference(KEY_SUBTITLES_OUTLINE_COLOR)!!
         subtitlesOutlineOpacity = findPreference(KEY_SUBTITLES_OUTLINE_COLOR_OPACITY)!!
+
+        deepSeekApiKey = findPreference(KEY_DEEPSEEK_API_KEY)!!
+        deepSeekApiKey.setOnBindEditTextListener {
+            it.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            it.setText(DeepSeekApiKeyStore.getApiKey(requireContext()))
+        }
+        deepSeekApiKey.setOnPreferenceChangeListener { _, newValue ->
+            DeepSeekApiKeyStore.setApiKey(requireContext(), newValue.toString())
+            updateDeepSeekApiKeySummary()
+            false
+        }
+        updateDeepSeekApiKeySummary()
 
         val presetPreference = findPreference<ListPreference>("subtitles_presets")!!
         presetPreference.value = "-1"
@@ -168,6 +185,15 @@ class PreferencesSubtitles : BasePreferenceFragment(), SharedPreferences.OnShare
         subtitlesOutlineEnabled.isChecked = true
         subtitlesOutlineColor.saveValue(ContextCompat.getColor(requireActivity(), R.color.black))
         subtitlesOutlineOpacity.value = 255
+    }
+
+    private fun updateDeepSeekApiKeySummary() {
+        val masked = DeepSeekApiKeyStore.maskedSummary(requireContext())
+        deepSeekApiKey.summary = if (masked.isEmpty()) {
+            getString(R.string.ai_subtitle_api_key_not_set)
+        } else {
+            getString(R.string.ai_subtitle_api_key_set, masked)
+        }
     }
 
     private fun updatePreferredSubtitleTrack() {

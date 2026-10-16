@@ -4,6 +4,7 @@
 
 package org.videolan.vlc.subtitles
 
+import android.content.Context
 import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -15,11 +16,10 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import org.videolan.vlc.BuildConfig
 import java.util.concurrent.TimeUnit
 
 class DeepSeekSubtitleTranslator(
-    private val apiKey: String = BuildConfig.DEEPSEEK_API_KEY,
+    private val context: Context,
 ) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -30,7 +30,9 @@ class DeepSeekSubtitleTranslator(
     private val inFlight = HashMap<String, Mutex>()
     private val inFlightGuard = Mutex()
 
-    fun isConfigured(): Boolean = apiKey.isNotBlank()
+    private fun apiKey(): String = DeepSeekApiKeyStore.getApiKey(context)
+
+    fun isConfigured(): Boolean = apiKey().isNotBlank()
 
     suspend fun translate(text: String): String? {
         val trimmed = text.trim()
@@ -67,6 +69,7 @@ class DeepSeekSubtitleTranslator(
                 put("model", MODEL_ID)
                 put("stream", false)
                 put("temperature", 0.3)
+                put("thinking", JSONObject().apply { put("type", "disabled") })
                 put("messages", JSONArray().apply {
                     put(JSONObject().apply {
                         put("role", "system")
@@ -85,7 +88,7 @@ class DeepSeekSubtitleTranslator(
             }
             val request = Request.Builder()
                 .url("$BASE_URL/chat/completions")
-                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Authorization", "Bearer ${apiKey()}")
                 .addHeader("Content-Type", "application/json")
                 .post(body.toString().toRequestBody(JSON_MEDIA))
                 .build()

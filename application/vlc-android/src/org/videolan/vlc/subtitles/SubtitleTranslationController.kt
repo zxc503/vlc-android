@@ -28,7 +28,7 @@ class SubtitleTranslationController(
     private val settings: SharedPreferences,
     private val lifecycleScope: LifecycleCoroutineScope,
     private val serviceProvider: () -> PlaybackService?,
-    private val translator: DeepSeekSubtitleTranslator = DeepSeekSubtitleTranslator(),
+    private val translator: DeepSeekSubtitleTranslator = DeepSeekSubtitleTranslator(overlay.context.applicationContext),
 ) {
     private var cues: List<SubtitleCue> = emptyList()
     private var activeCueIndex = -1
