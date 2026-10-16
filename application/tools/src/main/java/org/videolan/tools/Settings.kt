@@ -394,6 +394,9 @@ const val KEY_SUBTITLES_SHADOW = "subtitles_shadow"
 const val KEY_SUBTITLES_SHADOW_COLOR = "subtitles_shadow_color"
 const val KEY_SUBTITLES_SHADOW_COLOR_OPACITY = "subtitles_shadow_color_opacity"
 const val KEY_SUBTITLES_AUTOLOAD = "subtitles_autoload"
+const val KEY_AI_SUBTITLE_TRANSLATION = "ai_subtitle_translation"
+/** UI preference key; API key value is stored in encrypted app storage, not default SharedPreferences. */
+const val KEY_DEEPSEEK_API_KEY = "deepseek_api_key"
 const val KEY_OPENGL = "opengl"
 
 //Control settings

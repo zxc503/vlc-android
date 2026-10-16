@@ -112,6 +112,23 @@
                 android:layout="@layout/player_hud"
                 android:layout_gravity="bottom" />
 
+        <TextView
+                android:id="@+id/ai_subtitle_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:layout_marginBottom="72dp"
+                android:gravity="center"
+                android:padding="8dp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:visibility="gone"
+                android:importantForAccessibility="yes"
+                tools:visibility="visible"
+                tools:text="示例中文字幕" />
+
         <ImageView
                 android:id="@+id/hinge_go_left"
                 android:layout_width="wrap_content"

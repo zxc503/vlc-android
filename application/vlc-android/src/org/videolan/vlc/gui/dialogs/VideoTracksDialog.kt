@@ -162,6 +162,7 @@ class VideoTracksDialog : VLCBottomSheetDialogFragment() {
 
         generateSeparator(binding.subtitleTracks.options)
         generateOptionItem(binding.subtitleTracks.options, getString(R.string.spu_delay), R.drawable.ic_delay, VideoTrackOption.SUB_DELAY)
+        generateOptionItem(binding.subtitleTracks.options, getString(R.string.ai_subtitle_translation_title), R.drawable.ic_subtitles, VideoTrackOption.SUB_AI_TRANSLATE)
         generateOptionItem(binding.subtitleTracks.options, getString(R.string.subtitle_select), R.drawable.ic_subtitles_file, VideoTrackOption.SUB_PICK)
         if (VlcMigrationHelper.isLolliPopOrLater) generateOptionItem(binding.subtitleTracks.options, getString(R.string.download_subtitles), R.drawable.ic_download_subtitles, VideoTrackOption.SUB_DOWNLOAD)
         generateSeparator(binding.subtitleTracks.options, true)
@@ -227,7 +228,7 @@ class VideoTracksDialog : VLCBottomSheetDialogFragment() {
     }
 
     enum class VideoTrackOption {
-        SUB_DELAY, SUB_PICK, SUB_DOWNLOAD, AUDIO_DELAY
+        SUB_DELAY, SUB_AI_TRANSLATE, SUB_PICK, SUB_DOWNLOAD, AUDIO_DELAY
     }
 }
 

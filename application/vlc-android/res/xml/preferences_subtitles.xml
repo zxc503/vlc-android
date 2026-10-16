@@ -18,6 +18,21 @@
             android:key="subtitles_autoload"
             android:title="@string/subtitles_autoload_title"
             app:singleLineTitle="false" />
+
+    <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="ai_subtitle_translation"
+            android:title="@string/ai_subtitle_translation_title"
+            android:summary="@string/ai_subtitle_translation_summary"
+            app:singleLineTitle="false" />
+
+    <EditTextPreference
+            android:defaultValue=""
+            android:key="deepseek_api_key"
+            android:persistent="false"
+            android:title="@string/ai_subtitle_api_key_title"
+            android:summary="@string/ai_subtitle_api_key_summary"
+            app:singleLineTitle="false" />
     <ListPreference
             android:defaultValue=""
             android:entries="@array/subtitles_encoding_list"

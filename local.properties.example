@@ -1,0 +1,6 @@
+# Copy to local.properties (gitignored) and set your Android SDK path.
+sdk.dir=/path/to/Android/sdk
+
+# DeepSeek API key for AI subtitle translation (optional).
+# Alternatively set the DEEPSEEK_API_KEY environment variable when building.
+deepseek.api.key=your_deepseek_api_key_here

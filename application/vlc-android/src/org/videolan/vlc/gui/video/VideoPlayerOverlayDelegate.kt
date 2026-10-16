@@ -268,6 +268,7 @@ class VideoPlayerOverlayDelegate (private val player: VideoPlayerActivity) {
                         VideoTracksDialog.VideoTrackOption.SUB_DELAY -> player.delayDelegate.showSubsDelaySetting()
                         VideoTracksDialog.VideoTrackOption.SUB_DOWNLOAD -> downloadSubtitles()
                         VideoTracksDialog.VideoTrackOption.SUB_PICK -> pickSubtitles()
+                        VideoTracksDialog.VideoTrackOption.SUB_AI_TRANSLATE -> player.toggleAiSubtitleTranslation()
                     }
                 }, { trackID: String, trackType: VideoTracksDialog.TrackType ->
             when (trackType) {
@@ -289,6 +290,7 @@ class VideoPlayerOverlayDelegate (private val player: VideoPlayerActivity) {
                             service.unselectTrackType(trackType)
                         else
                             service.setSpuTrack(trackID)
+                        player.onSubtitleTrackChangedForAiTranslation()
                         runIO {
                             val mw = player.medialibrary.findMedia(service.currentMediaWrapper)
                             if (mw != null && mw.id != 0L) mw.setStringMeta(MediaWrapper.META_SUBTITLE_TRACK, trackID)
