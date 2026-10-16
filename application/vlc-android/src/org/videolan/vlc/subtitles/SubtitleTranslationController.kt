@@ -111,21 +111,34 @@ class SubtitleTranslationController(
         loadJob = lifecycleScope.launch {
             val service = serviceProvider() ?: return@launch
             val media = service.currentMediaWrapper ?: return@launch
-            val file = SubtitleFileResolver.resolve(overlay.context, media)
-            if (file == null) {
-                if (showErrors) showToast(R.string.ai_subtitle_no_external_file)
-                settings.edit().putBoolean(KEY_AI_SUBTITLE_TRANSLATION, false).apply()
-                return@launch
+            when (val loaded = SubtitleCueSource.load(overlay.context, service, media)) {
+                is SubtitleCueSource.LoadResult.Ok -> {
+                    cues = loaded.cues
+                    hideNativeSpu(service)
+                    onTimeChanged(service.getTime())
+                }
+                is SubtitleCueSource.LoadResult.Error -> {
+                    if (showErrors) {
+                        val msg = when (loaded.kind) {
+                            SubtitleCueSource.Kind.BitmapEmbedded -> R.string.ai_subtitle_bitmap_embedded
+                            SubtitleCueSource.Kind.ParseFailed -> R.string.ai_subtitle_parse_failed
+                            SubtitleCueSource.Kind.UnsupportedEmbedded -> R.string.ai_subtitle_embedded_unsupported
+                            SubtitleCueSource.Kind.NoSource -> R.string.ai_subtitle_no_subtitle_source
+                        }
+                        showToast(msg)
+                    }
+                    settings.edit().putBoolean(KEY_AI_SUBTITLE_TRANSLATION, false).apply()
+                }
             }
-            cues = SubtitleCueParser.parseFile(file)
-            if (cues.isEmpty()) {
-                if (showErrors) showToast(R.string.ai_subtitle_parse_failed)
-                settings.edit().putBoolean(KEY_AI_SUBTITLE_TRANSLATION, false).apply()
-                return@launch
-            }
-            hideNativeSpu(service)
-            onTimeChanged(service.getTime())
         }
+    }
+
+    /** Reload cues when the user picks a different embedded/external subtitle track. */
+    fun onSubtitleTrackChanged() {
+        if (!enabled) return
+        activeCueIndex = -1
+        cues = emptyList()
+        applyEnabledState(showErrors = false)
     }
 
     private fun hideNativeSpu(service: PlaybackService) {

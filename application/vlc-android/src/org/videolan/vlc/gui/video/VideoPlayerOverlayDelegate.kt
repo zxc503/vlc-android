@@ -290,6 +290,7 @@ class VideoPlayerOverlayDelegate (private val player: VideoPlayerActivity) {
                             service.unselectTrackType(trackType)
                         else
                             service.setSpuTrack(trackID)
+                        player.onSubtitleTrackChangedForAiTranslation()
                         runIO {
                             val mw = player.medialibrary.findMedia(service.currentMediaWrapper)
                             if (mw != null && mw.id != 0L) mw.setStringMeta(MediaWrapper.META_SUBTITLE_TRACK, trackID)

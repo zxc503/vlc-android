@@ -1714,6 +1714,10 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
         subtitleTranslationController?.toggle()
     }
 
+    fun onSubtitleTrackChangedForAiTranslation() {
+        subtitleTranslationController?.onSubtitleTrackChanged()
+    }
+
     private var currentTracks: Pair<String, List<IMedia.Track>>? = null
 
     /**

@@ -474,13 +474,16 @@
     <string name="subtitles_bold_title">Bold subtitles</string>
     <string name="subtitles_autoload_title">Auto load subtitles</string>
     <string name="ai_subtitle_translation_title">AI 翻译字幕（英→中）</string>
-    <string name="ai_subtitle_translation_summary">使用 DeepSeek 将英文字幕实时翻译为简体中文（需外置 SRT/VTT 字幕文件）</string>
+    <string name="ai_subtitle_translation_summary">使用 DeepSeek 将英文字幕实时翻译为简体中文（支持外置 SRT/VTT 与容器内文本型内嵌字幕轨）</string>
     <string name="ai_subtitle_missing_api_key">未配置 DeepSeek API Key，请在 设置 → 字幕 中填写</string>
     <string name="ai_subtitle_api_key_title">DeepSeek API Key</string>
     <string name="ai_subtitle_api_key_summary">在应用内保存 API Key，优先于构建时配置；仅保存在本机加密存储</string>
     <string name="ai_subtitle_api_key_not_set">未设置（可在上方填写，或使用构建时注入的 Key）</string>
     <string name="ai_subtitle_api_key_set">已保存：%1$s</string>
     <string name="ai_subtitle_no_external_file">未找到可解析的外置字幕文件，无法启用 AI 翻译</string>
+    <string name="ai_subtitle_no_subtitle_source">未找到可用字幕（请选择内嵌字幕轨、外置 SRT/VTT，或同名字幕文件）</string>
+    <string name="ai_subtitle_bitmap_embedded">当前内嵌字幕为位图格式（如 PGS/DVD），暂不支持 AI 翻译</string>
+    <string name="ai_subtitle_embedded_unsupported">无法从当前内嵌字幕轨提取文本（仅支持本地文件中的文本型轨）</string>
     <string name="ai_subtitle_parse_failed">字幕文件解析失败</string>
     <string name="previous_color">Previous color</string>
     <string name="new_color">New color</string>
